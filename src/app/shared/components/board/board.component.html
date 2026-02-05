@@ -1,0 +1,16 @@
+@let board = gameService.board();
+
+<div class="flex flex-col gap-2">
+  @for (row of board; track $index; let rowIndex = $index) {
+    <div class="flex gap-2">
+      @for (tile of row; track $index; let colIndex = $index) {
+        <app-tile
+          (tileClick)="onTileClick(rowIndex, colIndex)"
+          [letter]="tile.letter"
+          [status]="tile.status"
+          [isActive]="tile.isActive"
+        ></app-tile>
+      }
+    </div>
+  }
+</div>

@@ -1,0 +1,15 @@
+<div
+  class="w-14 h-14 md:w-16 md:h-16 flex items-center justify-center text-2xl font-bold uppercase border-2 transition-all duration-300 text-white"
+  [ngClass]="{
+    'bg-transparent border-white': status === 'empty',
+    'bg-green-600 border-green-600': status === 'correct',
+    'bg-yellow-500 border-yellow-500': status === 'present',
+    'bg-zinc-500 border-zinc-500': status === 'absent',
+    'border-black': isActive,
+    'rounded-md': !isActive,
+    'rounded-t-md border-b-8': isActive,
+  }"
+  (click)="onClick()"
+>
+  {{ letter }}
+</div>
