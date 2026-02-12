@@ -3,4 +3,5 @@ export enum TileStatus {
   Correct = 'correct',
   Present = 'present',
   Absent = 'absent',
+  Invalid = 'invalid',
 }

@@ -2,7 +2,7 @@
 
 <div class="flex flex-col gap-2">
   @for (row of board; track $index; let rowIndex = $index) {
-    <div class="flex gap-2">
+    <div class="flex gap-1 md:gap-2 ">
       @for (tile of row; track $index; let colIndex = $index) {
         <app-tile
           (tileClick)="onTileClick(rowIndex, colIndex)"

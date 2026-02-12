@@ -1,18 +1,56 @@
-import { Injectable, signal, WritableSignal } from '@angular/core';
+import { inject, Injectable, signal, WritableSignal } from '@angular/core';
 import { TileStatus } from '../shared/enums/tile-status.enum';
 import { TileData } from '../shared/models/tile-data.model';
+import { WordsService } from './words.service';
 
 const ROWS = 6;
 const COLS = 5;
-const WORD = 'APPLE';
+const ANIMATION_DELAY_MS = 150;
 
 @Injectable({
   providedIn: 'root',
 })
 export class GameService {
+  private wordsService = inject(WordsService);
+
   board: WritableSignal<TileData[][]> = signal(this.createEmptyBoard());
   currentRow: WritableSignal<number> = signal(0);
   currentCol: WritableSignal<number> = signal(0);
+  gameFinished: WritableSignal<boolean> = signal(false);
+  gameWon: WritableSignal<boolean> = signal(false);
+
+  setActiveTile(row: number, col: number): void {
+    if (row !== this.currentRow()) {
+      return;
+    }
+
+    this.board.update(board => {
+      const current = board[this.currentRow()][this.currentCol()];
+      this.updateLetter(current.letter, current.status, false, this.currentRow(), this.currentCol());
+      const clicked = board[row][col];
+      this.updateLetter(clicked.letter, clicked.status, true, row, col);
+      return board;
+    });
+  }
+
+  handleKeyPress(key: string): void {
+    key = key.toUpperCase();
+    if (key === 'BACKSPACE' || key === 'DELETE' || key === '⌫') {
+      this.removeLetter();
+    } else if (key === 'ENTER') {
+      this.submitGuess();
+    } else if (/^[a-zA-Z]$/.test(key)) {
+      this.addLetter(key.toUpperCase());
+    }
+  }
+
+  resetGame(): void {
+    this.board.set(this.createEmptyBoard());
+    this.currentRow.set(0);
+    this.currentCol.set(0);
+    this.gameWon.set(false);
+    this.gameFinished.set(false);
+  }
 
   private createEmptyBoard(): TileData[][] {
     const board = Array.from({ length: ROWS }, () =>
@@ -65,7 +103,7 @@ export class GameService {
     });
   }
 
-  updateLetter(letter: string, status: TileStatus, isActive: boolean, row: number, col: number): void {
+  private updateLetter(letter: string, status: TileStatus, isActive: boolean, row: number, col: number): void {
     this.board.update(board => {
       board[row][col] = { letter, status, isActive };
       return board;
@@ -93,48 +131,78 @@ export class GameService {
     }
   }
 
-  handleKeyPress(key: string): void {
-    if (key === 'Backspace') {
-      this.removeLetter();
-    } else if (key === 'Enter') {
-      this.submitGuess();
-    } else if (/^[a-zA-Z]$/.test(key)) {
-      this.addLetter(key.toUpperCase());
+  private submitGuess(): void {
+    if (this.gameWon()) {
+      return;
     }
-  }
 
-  submitGuess(): void {
     const row = this.currentRow();
 
     const letters = this.board()[row].map(tile => tile.letter);
-    if (letters.length < COLS || letters.includes('')) {
+    if (letters.length < COLS || letters.includes('') || !this.wordsService.isValidWord(letters.join(''))) {
+      const currentRowIndex = row;
+
+      // coloca status Invalid na linha inteira (pra animar)
+      for (let col = 0; col < COLS; col++) {
+        const tile = this.board()[currentRowIndex][col];
+        this.updateLetter(tile.letter, TileStatus.Invalid, tile.isActive, currentRowIndex, col);
+      }
+
+      // depois da animação, volta para Empty
+      setTimeout(() => {
+        for (let col = 0; col < COLS; col++) {
+          const tile = this.board()[currentRowIndex][col];
+          if (tile.status === TileStatus.Invalid) {
+            this.updateLetter(tile.letter, TileStatus.Empty, tile.isActive, currentRowIndex, col);
+          }
+        }
+      }, 600);
+
       return;
     }
+
+    const dailyWord = this.wordsService.dailyWord();
+    const guessWord = letters.join('');
+
     letters.forEach((letter, index) => {
-      if (letter === WORD[index]) {
-        this.updateLetter(letter, TileStatus.Correct, false, row, index);
-      } else if (WORD.includes(letter)) {
-        this.updateLetter(letter, TileStatus.Present, false, row, index);
-      } else {
-        this.updateLetter(letter, TileStatus.Absent, false, row, index);
-      }
+      setTimeout(() => {
+        if (letter === dailyWord[index]) {
+          this.updateLetter(letter, TileStatus.Correct, false, row, index);
+        } else if (dailyWord.includes(letter)) {
+          this.updateLetter(letter, TileStatus.Present, false, row, index);
+        } else {
+          this.updateLetter(letter, TileStatus.Absent, false, row, index);
+        }
+
+        // só avança a linha depois do último flip
+        if (index === COLS - 1 && !this.gameWon()) {
+          this.jumpRow();
+        }
+      }, ANIMATION_DELAY_MS * index);
     });
 
-    this.currentRow.set(row + 1);
-    this.currentCol.set(0);
+    // se acertou a palavra, marca vitória depois que terminar os flips
+    if (guessWord === dailyWord) {
+      setTimeout(() => {
+        this.gameWon.set(true);
+        this.gameFinished.set(true);
+      }, ANIMATION_DELAY_MS * COLS);
+    }
+
+    if (row === ROWS - 1) {
+      setTimeout(() => {
+        this.gameFinished.set(true);
+      }, ANIMATION_DELAY_MS * COLS);
+    }
   }
 
-  setActiveTile(row: number, col: number): void {
-    if (row !== this.currentRow()) {
+  private jumpRow() {
+    if (this.currentRow() >= ROWS) {
       return;
     }
 
-    this.board.update(board => {
-      const current = board[this.currentRow()][this.currentCol()];
-      this.updateLetter(current.letter, current.status, false, this.currentRow(), this.currentCol());
-      const clicked = board[row][col];
-      this.updateLetter(clicked.letter, clicked.status, true, row, col);
-      return board;
-    });
+    this.currentRow.set(this.currentRow() + 1);
+    this.currentCol.set(0);
+    this.updateLetter('', TileStatus.Empty, true, this.currentRow(), 0);
   }
 }

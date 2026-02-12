@@ -1,0 +1,25 @@
+@if (gameService.gameFinished()) {
+  <div class="fixed inset-0 z-1 flex items-center justify-center bg-black/50">
+    <div class="bg-white rounded-lg shadow-xl max-w-sm w-full mx-4 p-6 text-slate-900">
+      <h2 class="text-xl font-bold mb-2 text-center">
+        @if (gameService.gameWon()) {
+          Você venceu!
+        } @else {
+          Fim de jogo
+        }
+      </h2>
+      <p class="text-center mb-4">
+        @if (gameService.gameWon()) {
+          Parabéns por adivinhar a palavra do dia!
+        } @else {
+          Não foi dessa vez! A palavra do dia era: {{ wordsService.dailyWord() }}.
+        }
+      </p>
+      <div class="flex justify-center">
+        <button type="button" class="px-4 py-2 rounded bg-teal-600 text-white font-semibold" (click)="resetGame()">
+          Reiniciar o jogo!
+        </button>
+      </div>
+    </div>
+  </div>
+}

@@ -1,15 +1,16 @@
-<div
-  class="w-14 h-14 md:w-16 md:h-16 flex items-center justify-center text-2xl font-bold uppercase border-2 transition-all duration-300 text-white"
+<button
+  type="button"
+  class="w-12 h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 flex items-center justify-center text-lg md:text-xl lg:text-2xl font-bold uppercase text-white border-2 transition-all duration-300 focus:outline-none"
   [ngClass]="{
     'bg-transparent border-white': status === 'empty',
-    'bg-green-600 border-green-600': status === 'correct',
-    'bg-yellow-500 border-yellow-500': status === 'present',
-    'bg-zinc-500 border-zinc-500': status === 'absent',
-    'border-black': isActive,
+    'bg-green-600 border-green-600 tile-flip': status === 'correct',
+    'bg-yellow-500 border-yellow-500 tile-flip': status === 'present',
+    'bg-zinc-500 border-zinc-500 tile-flip': status === 'absent',
+    'bg-transparent border-red-400 tile-invalid': status === 'invalid',
     'rounded-md': !isActive,
-    'rounded-t-md border-b-8': isActive,
+    'rounded-t-md border-b-8 tile-pop': isActive,
   }"
   (click)="onClick()"
 >
   {{ letter }}
-</div>
+</button>
